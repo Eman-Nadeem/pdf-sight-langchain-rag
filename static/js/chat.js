@@ -218,3 +218,87 @@ function formatMarkdown(text) {
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\n/g, '<br>');
 }
+
+// ==========================================
+// 5. COLLAPSIBLE SIDEBAR & DRAGGABLE RESIZER
+// ==========================================
+const chatPanel = document.getElementById('chatPanel');
+const resizer = document.getElementById('resizer');
+const toggleChatBtn = document.getElementById('toggleChatBtn');
+const expandChatBtn = document.getElementById('expandChatBtn');
+const resizerToggleBtn = document.getElementById('resizerToggleBtn');
+
+let isDragging = false;
+
+function collapseSidebar() {
+    chatPanel.classList.add('collapsed');
+    if (resizer) resizer.style.display = 'none';
+    if (expandChatBtn) expandChatBtn.classList.remove('hidden');
+}
+
+function expandSidebar() {
+    chatPanel.classList.remove('collapsed');
+    if (resizer) resizer.style.display = 'flex';
+    if (expandChatBtn) expandChatBtn.classList.add('hidden');
+}
+
+if (toggleChatBtn) toggleChatBtn.addEventListener('click', collapseSidebar);
+if (expandChatBtn) expandChatBtn.addEventListener('click', expandSidebar);
+if (resizerToggleBtn) {
+    resizerToggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (chatPanel.classList.contains('collapsed')) {
+            expandSidebar();
+        } else {
+            collapseSidebar();
+        }
+    });
+}
+
+const pdfPanelElem = document.getElementById('pdfPanel');
+
+function updatePdfPanelNarrowState() {
+    if (!pdfPanelElem) return;
+    if (pdfPanelElem.offsetWidth < 450) {
+        pdfPanelElem.classList.add('narrow');
+    } else {
+        pdfPanelElem.classList.remove('narrow');
+    }
+}
+
+// Draggable Resizer Handle
+if (resizer && chatPanel) {
+    resizer.addEventListener('mousedown', (e) => {
+        if (e.target.closest('#resizerToggleBtn')) return;
+        isDragging = true;
+        resizer.classList.add('dragging');
+        document.body.style.cursor = 'col-resize';
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        const minWidth = 320;
+        const maxWidth = window.innerWidth * 0.7;
+        let newWidth = e.clientX;
+
+        if (newWidth < minWidth) newWidth = minWidth;
+        if (newWidth > maxWidth) newWidth = maxWidth;
+
+        chatPanel.style.width = `${newWidth}px`;
+        updatePdfPanelNarrowState();
+    });
+
+    document.addEventListener('mouseup', () => {
+        if (isDragging) {
+            isDragging = false;
+            resizer.classList.remove('dragging');
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+        }
+    });
+
+    window.addEventListener('resize', updatePdfPanelNarrowState);
+    updatePdfPanelNarrowState();
+}

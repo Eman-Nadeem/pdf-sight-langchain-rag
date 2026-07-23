@@ -16,18 +16,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 </head>
 <body>
-    <div class="app-container">
+    <div id="appContainer" class="app-container">
         <!-- LEFT PANEL: Chat & Controls -->
-        <aside class="chat-panel">
+        <aside id="chatPanel" class="chat-panel">
             <header class="panel-header">
                 <div class="brand">
                     <i class="fa-solid fa-brain brand-icon"></i>
                     <h2>PDF-Sight</h2>
                 </div>
-                <div class="upload-section">
+                <div class="header-actions">
                     <input type="file" id="pdfFileInput" accept="application/pdf" hidden>
-                    <button id="uploadBtn" class="btn btn-primary">
-                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload PDF
+                    <button id="uploadBtn" class="btn btn-primary" title="Upload PDF">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> <span class="btn-text">Upload PDF</span>
+                    </button>
+                    <button id="toggleChatBtn" class="btn-icon" title="Collapse Sidebar">
+                        <i class="fa-solid fa-chevron-left"></i>
                     </button>
                 </div>
             </header>
@@ -60,10 +63,20 @@
             </div>
         </aside>
 
+        <!-- DRAGGABLE RESIZER HANDLE -->
+        <div id="resizer" class="resizer" title="Drag to resize panels">
+            <button id="resizerToggleBtn" class="resizer-toggle-btn" title="Toggle Sidebar">
+                <i class="fa-solid fa-chevron-left" id="resizerToggleIcon"></i>
+            </button>
+        </div>
+
         <!-- RIGHT PANEL: PDF.js Viewer -->
-        <main class="pdf-panel">
+        <main id="pdfPanel" class="pdf-panel">
             <header class="pdf-toolbar">
                 <div class="pdf-info">
+                    <button id="expandChatBtn" class="btn-icon hidden" title="Expand Sidebar">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
                     <i class="fa-regular fa-file-pdf"></i>
                     <span id="activeDocTitle">No PDF Loaded</span>
                 </div>
@@ -73,16 +86,20 @@
                     <button id="nextPage" class="btn-icon" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
                     <div class="divider"></div>
                     <button id="zoomOut" class="btn-icon" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <span id="zoomScale" class="zoom-scale" title="Zoom Level">120%</span>
                     <button id="zoomIn" class="btn-icon" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                    <button id="zoomReset" class="btn-icon" title="Reset Zoom"><i class="fa-solid fa-rotate-left"></i></button>
                 </div>
             </header>
 
-            <div class="pdf-viewport">
+            <div id="pdfViewport" class="pdf-viewport">
                 <div id="pdfPlaceholder" class="pdf-placeholder">
                     <i class="fa-solid fa-file-pdf placeholder-icon"></i>
                     <p>Select a document or click a citation badge in chat to view it here.</p>
                 </div>
-                <canvas id="pdfCanvas" class="hidden"></canvas>
+                <div id="canvasWrapper" class="canvas-wrapper hidden">
+                    <canvas id="pdfCanvas"></canvas>
+                </div>
             </div>
         </main>
     </div>

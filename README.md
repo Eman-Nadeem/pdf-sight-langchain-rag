@@ -6,8 +6,11 @@
 [![FAISS](https://img.shields.io/badge/VectorDB-FAISS-blueviolet.svg)](https://github.com/facebookresearch/faiss)
 [![Ollama](https://img.shields.io/badge/Local--AI-Ollama-black.svg)](https://ollama.ai/)
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/Live--Demo-Online-success.svg?style=flat&logo=rocket)](https://your-deployment-link-here.com)
 
 **PDF-Sight** is a privacy-first, local multi-document Retrieval-Augmented Generation (RAG) assistant. Built with **Flask**, **LangChain**, **FAISS**, **PDF.js**, and **Ollama**, PDF-Sight turns your local PDF library into an interactive, conversational knowledge base with interactive page-level citation badges and an interactive PDF viewer.
+
+> 🌐 **Live Application**: [https://your-deployment-link-here.com](https://your-deployment-link-here.com) *(Update this URL once hosted)*
 
 ---
 
@@ -78,7 +81,7 @@ ollama pull nomic-embed-text
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/YourUsername/pdf-sight.git
+   git clone https://github.com/Eman-Nadeem/pdf-sight.git
    cd pdf-sight
    ```
 
@@ -186,3 +189,14 @@ Contributions, issues, and feature requests are welcome!
 ## 📄 License
 
 Distributed under the **MIT License**. See `LICENSE` for more information.
+
+---
+
+## 👩‍💻 Author & Connect
+
+**Eman Nadeem**
+- **LinkedIn**: [emaan-nadeem](https://www.linkedin.com/in/emaan-nadeem)
+- **GitHub**: [@Eman-Nadeem](https://github.com/Eman-Nadeem)
+
+---
+*Created with ❤️ by Eman Nadeem*

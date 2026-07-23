@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF-Sight | Local Multi-PDF RAG Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <!-- PDF.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- LEFT PANEL: Chat & Controls -->
+        <aside class="chat-panel">
+            <header class="panel-header">
+                <div class="brand">
+                    <i class="fa-solid fa-brain brand-icon"></i>
+                    <h2>PDF-Sight</h2>
+                </div>
+                <div class="upload-section">
+                    <input type="file" id="pdfFileInput" accept="application/pdf" hidden>
+                    <button id="uploadBtn" class="btn btn-primary">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Upload PDF
+                    </button>
+                </div>
+            </header>
+
+            <div class="filter-bar">
+                <label for="docSelect"><i class="fa-solid fa-filter"></i> Target Context:</label>
+                <select id="docSelect" class="form-select">
+                    <option value="all">🌐 All Indexed Documents</option>
+                </select>
+            </div>
+
+            <!-- Chat History Feed -->
+            <div id="chatMessages" class="chat-messages">
+                <div class="message system-message">
+                    <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                    <div class="content">
+                        Hello! Upload a PDF to start analyzing, or ask questions across your document library.
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input Area -->
+            <div class="chat-input-area">
+                <form id="chatForm">
+                    <input type="text" id="userInput" placeholder="Ask a question about your PDFs..." autocomplete="off">
+                    <button type="submit" id="sendBtn" class="btn btn-send">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- RIGHT PANEL: PDF.js Viewer -->
+        <main class="pdf-panel">
+            <header class="pdf-toolbar">
+                <div class="pdf-info">
+                    <i class="fa-regular fa-file-pdf"></i>
+                    <span id="activeDocTitle">No PDF Loaded</span>
+                </div>
+                <div class="pdf-controls">
+                    <button id="prevPage" class="btn-icon" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
+                    <span class="page-count">Page <span id="pageNum">0</span> of <span id="pageCount">0</span></span>
+                    <button id="nextPage" class="btn-icon" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
+                    <div class="divider"></div>
+                    <button id="zoomOut" class="btn-icon" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+                    <button id="zoomIn" class="btn-icon" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+                </div>
+            </header>
+
+            <div class="pdf-viewport">
+                <div id="pdfPlaceholder" class="pdf-placeholder">
+                    <i class="fa-solid fa-file-pdf placeholder-icon"></i>
+                    <p>Select a document or click a citation badge in chat to view it here.</p>
+                </div>
+                <canvas id="pdfCanvas" class="hidden"></canvas>
+            </div>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/pdf_viewer.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>

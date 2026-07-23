@@ -96,21 +96,38 @@ Always reference the source document and page number in your response when citin
                 chunk_overlap=200
             )
             chunks=text_splitter.split_documents(docs)
+            
+            # Filter out empty or whitespace-only chunks (prevents Ollama empty prompt errors)
+            chunks = [c for c in chunks if c.page_content and c.page_content.strip()]
 
-            # Create or add to FAISS vector store using document chunks and embeddings
-            if self.vector_store is None:
-                self.vector_store=FAISS.from_documents(
-                    documents=chunks,
-                    embedding=self.embeddings
-                )
-            else:
-                self.vector_store.add_documents(chunks)
+            if not chunks:
+                print("No text chunks extracted from PDF.")
+                return 0
+
+            # Create or add to FAISS vector store in batches (prevents Ollama timeouts on large PDFs)
+            batch_size = 50
+            total_batches = (len(chunks) + batch_size - 1) // batch_size
+            print(f"Indexing {len(chunks)} valid text chunks in {total_batches} batches...")
+
+            for i in range(0, len(chunks), batch_size):
+                batch = chunks[i:i + batch_size]
+                if self.vector_store is None:
+                    self.vector_store = FAISS.from_documents(
+                        documents=batch,
+                        embedding=self.embeddings
+                    )
+                else:
+                    self.vector_store.add_documents(batch)
+                print(f"  Indexed batch {i//batch_size + 1}/{total_batches} ({len(batch)} chunks)")
             
             return len(chunks)
 
         except Exception as e:
-            print("Error processing PDF:",e)
+            print("Error processing PDF:", e)
+            import traceback
+            traceback.print_exc()
             return 0
+
     
 
     def get_retriever(self, doc_id="all", top_k=4):

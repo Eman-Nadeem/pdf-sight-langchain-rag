@@ -32,12 +32,12 @@ def upload_file():
 
     # Create unique 8-character ID for document
     doc_id=str(uuid.uuid4())[:8]
-    filename=file.name
+    filename=file.filename
     stored_filename=f"{doc_id}_{filename}"
     file_path=os.path.join(app.config['UPLOAD_FOLDER'], stored_filename)
     file.save(file_path)
 
-    chunk_count=rag.process_pdf(file_path, doc_id)
+    chunks_count=rag.process_pdf(file_path, doc_id)
 
     doc_meta={
         "doc_id": doc_id,
@@ -66,15 +66,15 @@ def chat():
     if not message:
         return jsonify({"error": "Message is required"}), 400
 
-    reponse=rag.ask_pdf(message, session_id=session_id, doc_id=doc_id)
+    response=rag.ask_pdf(message, session_id=session_id, doc_id=doc_id)
     return jsonify(response)
 
 @app.route("/uploads/<path:filename>")
 def serve_uploads(filename):
-    return
-send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 if __name__=="__main__":
-    app.run(host="[IP_ADDRESS]", port=5000, debug=True)
+    app.run(host="127.0.0.1", port=5000, debug=True)
+
 
     

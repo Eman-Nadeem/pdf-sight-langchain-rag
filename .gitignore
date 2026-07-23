@@ -1,0 +1,25 @@
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# Environment Variables & Secrets
+.env
+
+# Python Bytecode & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Application Data & Uploads
+uploads/*
+!uploads/.gitkeep
+faiss_index/
+
+# IDE / OS specific
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,16 @@
+flask>=3.0.0
+python-dotenv>=1.0.0
+pypdf>=4.0.0
+faiss-cpu>=1.7.4
+
+# LangChain Core & Ecosystem
+langchain>=0.3.0
+langchain-community>=0.3.0
+langchain-core>=0.3.0
+
+# Local Ollama Integration
+langchain-ollama>=0.2.0
+
+# Cloud Model Providers (Uncomment if you want to use OpenAI or Gemini instead of Ollama)
+# langchain-openai>=0.2.0
+# langchain-google-genai>=0.2.0

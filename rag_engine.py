@@ -13,6 +13,11 @@ from langchain_ollama import OllamaEmbeddings, ChatOllama
 # from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 # from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
 
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables.history import RunnableWithMessageHistory
+from langchain_community.chat_message_histories import ChatMessageHistory
+
 load_dotenv()
 
 class RagEngine:
@@ -20,6 +25,17 @@ class RagEngine:
         self.provider=os.getenv("MODEL_PROVIDER")
         self.vector_store=None
         self.init_models()
+        self.sessions={}
+        self.prompt=ChatPromptTemplate.from_messages([
+            ("system", """You are a helpful AI document assistant. 
+Answer the user's question accurately using ONLY the context provided below. 
+If the information is not present in the context, politely state that you do not know.
+Always reference the source document and page number in your response when citing facts.
+            Context:
+            {context}"""),
+            MessagesPlaceholder(variable_name="history"),
+            ("human", "{input}")
+        ])
     
     def init_models(self):
         if self.provider=="ollama":
@@ -120,3 +136,111 @@ class RagEngine:
             search_type="similarity",
             search_kwargs=search_kwargs
         )
+    
+    def get_session_history(self, session_id: str):
+        """Gets or creates a ChatMessageHistory for the given session ID"""
+        if session_id not in self.sessions:
+            self.sessions[session_id]=ChatMessageHistory()
+        return self.sessions[session_id]
+
+    def format_docs(self, docs):
+        """Format retrieved documents for the LLM with page and document references"""
+        formatted=[]
+
+        for doc in docs:
+            page_num=doc.metadata.get("page", 0)+1
+            doc_id=doc.metadata.get("doc_id", "Doc")
+            header=f"[Doc: {doc_id} | Page: {page_num}]"
+
+            formatted.append(f"{header}\n{doc.page_content}")
+        return "\n\n".join(formatted)
+    
+    def ask_pdf(self, question:str, session_id:str="default", doc_id="all"):
+        if self.vector_store is None:
+            return {
+                "answer": "No documents have been uploaded yet. Please upload a PDF first.",
+                "sources": []
+            }
+
+        # 1. Get retriever for specific doc_id or "all"
+        retriever=self.get_retriever(doc_id=doc_id)
+
+        # 2. Retrieve relevant chunks and format documents  
+        retrieved_docs=retriever.invoke(question)
+        formatted_docs=self.format_docs(retrieved_docs)
+
+        # 3. Create LCEL chain with output parser
+        chain= self.prompt | self.llm | StrOutputParser()
+
+        # 4. Wrap chain with conversation history
+        with_history=RunnableWithMessageHistory(
+            chain,
+            self.get_session_history,
+            input_messages_key="input",
+            history_messages_key="history"
+        )
+        
+        # 5 Invoke the chain with session config
+        response_text=with_history.invoke(
+            {
+                "context": formatted_docs,
+                "input": question
+            },
+            config={
+                "configurable":{
+                    "session_id": session_id
+                }
+            }
+        )
+
+        # 6. Collect citation metadata for frontend (PDF.js page jumping)
+        sources=[
+            {
+                "doc_id": doc.metadata.get("doc_id"),
+                "page": doc.metadata.get("page", 0)+1,
+                "snippet": doc.page_content[:200] # first 200 chars
+            }
+            for doc in retrieved_docs
+        ]
+
+        return {
+            "answer": response_text,
+            "sources": sources
+        }
+        
+    
+if __name__ == "__main__":
+    import sys
+    
+    print("[+] Initializing RAG Engine...")
+    engine = RagEngine()
+
+    # Place a PDF in your uploads/ folder to test
+    sample_pdf_path = "uploads/sample.pdf"
+
+    if os.path.exists(sample_pdf_path):
+        print(f"[+] Processing {sample_pdf_path}...")
+        chunks_count = engine.process_pdf(sample_pdf_path, doc_id="sample_doc")
+        print(f"[+] Document processed into {chunks_count} vector chunks.")
+
+        # Test query 1
+        query = "What is the main topic of this document?"
+        print(f"\n[?] Asking: '{query}'")
+        res = engine.ask_pdf(query, session_id="test_session")
+        
+        print("\n[!] AI Response:")
+        print(res["answer"])
+        print("\n[*] Sources:")
+        for s in res["sources"]:
+            print(f"  - Doc: {s['doc_id']} | Page {s['page']}")
+
+        # Test query 2 (Multi-turn follow-up test)
+        followup = "Can you summarize it in 2 bullet points?"
+        print(f"\n[?] Asking follow-up: '{followup}'")
+        res2 = engine.ask_pdf(followup, session_id="test_session")
+        print("\n[!] AI Response:")
+        print(res2["answer"])
+
+    else:
+        print(f"[!] To test, create an 'uploads/' directory and add a PDF file named 'sample.pdf'.")
+

@@ -8,26 +8,30 @@
 [![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)](LICENSE)
 [![Live Demo](https://img.shields.io/badge/Live--Demo-Online-success.svg?style=flat&logo=rocket)](https://your-deployment-link-here.com)
 
-**PDF-Sight** is a privacy-first, local multi-document Retrieval-Augmented Generation (RAG) assistant. Built with **Flask**, **LangChain**, **FAISS**, **PDF.js**, and **Ollama**, PDF-Sight turns your local PDF library into an interactive, conversational knowledge base with interactive page-level citation badges and an interactive PDF viewer.
+**PDF-Sight** is a privacy-first, local multi-document Retrieval-Augmented Generation (RAG) assistant. Built with **Flask**, **LangChain**, **FAISS**, **PDF.js**, and **Ollama**, PDF-Sight turns your local PDF library into an interactive, conversational knowledge base with page-level citation jump-badges, canvas text highlighting, dark mode inversion, report exporting, and document management.
 
 > 🌐 **Live Application**: [https://your-deployment-link-here.com](https://your-deployment-link-here.com) *(Update this URL once hosted)*
 
 ---
 
-## 🌟 Features & Highlights
+## 🌟 Key Features & Roadmap
 
-### ⚡ Smart Document Intelligence & RAG
+### ⚡ Smart Document Intelligence & RAG Engine
 - **Multi-PDF Library Indexing**: Upload and index multiple PDF files simultaneously into a high-density FAISS vector store.
 - **Target Context Filtering**: Switch search scoping between `🌐 All Indexed Documents` or target specific files.
 - **Interactive Citation Badges**: Click any citation badge in the AI responses to switch the viewer and jump to the exact source page.
-- **Local & Private**: Powered by **Ollama** (`llama3.2` & `nomic-embed-text`) — no API keys required and 100% of your data stays on your machine.
+- **Text Highlighting on PDF Canvas**: Clicking citation badges computes text bounding coordinates (`pdfjsLib.Util.transform`) and overlays translucent yellow highlight boxes over matching text snippets directly on top of the rendered PDF page.
+- **100% Local & Private**: Powered by **Ollama** (`llama3.2` & `nomic-embed-text`) — zero API keys required and 100% of your data stays on your machine.
 
 ### 🎨 Commercial-Grade UI / UX
-- **Draggable Split-Panel Resizer**: Drag the central divider bar to adjust chat and PDF viewer panel widths in real-time.
+- **Dark / Night Mode PDF Inversion**: 1-click toggle (<i class="fa-solid fa-moon"></i>) to invert PDF canvas colors (`filter: invert(0.92) hue-rotate(180deg)`) with clean drop-shadow framing for eye-comfort night reading.
+- **Export Chat & Analysis Report**: 1-click export button (<i class="fa-solid fa-file-export"></i>) to compile full conversation logs, active target context, and cited source references into a downloadable `.md` report.
+- **Interactive Page Jump Input Box**: Interactive numeric input field (`Page [ 24 ] of 51`). Type any page number and hit `Enter` to jump instantly.
+- **Indexed Document Manager Modal**: Management popup modal (<i class="fa-solid fa-folder-open"></i>) listing all indexed PDFs with individual **Delete** buttons to purge specific files from the FAISS vector store.
+- **Draggable Split-Panel Resizer**: Drag the central divider bar to adjust chat and PDF viewer panel widths in real-time with min-width (320px) boundary protection.
 - **Collapsible Sidebar**: One-click toggle to collapse the chat panel into a full-screen 100% width PDF viewer.
-- **High-Resolution PDF.js Viewer**: Multi-page rendering with page controls, zoom scaling up to 500%, live zoom percentage display, and 1-click zoom reset.
-- **Bi-Directional Drag-to-Pan (Grab View)**: Click and drag anywhere on zoomed-in PDF pages (`cursor: grab / grabbing`) to navigate pages without edge clipping.
-- **Safe Center Layout Engine**: Automatically centers pages when fitted, and preserves equal 4-side dark margins during zoom overflow.
+- **High-Resolution Zoom & Drag-to-Pan (Grab View)**: Multi-page rendering with page controls, zoom scaling up to 500%, live zoom percentage display, 1-click zoom reset, and click-and-drag mouse panning (`cursor: grab / grabbing`).
+- **Safe Center Layout Engine**: Automatically centers pages when fitted, and preserves equal 4-side dark margins during zoom overflow via `safe center` flex layout and `::after` scroll spacers.
 
 ---
 
@@ -35,12 +39,12 @@
 
 | Layer | Technology | Purpose |
 | :--- | :--- | :--- |
-| **Backend Framework** | [Flask](https://flask.palletsprojects.com/) | REST API routes for uploads, document management, and RAG chat streams |
+| **Backend Framework** | [Flask](https://flask.palletsprojects.com/) | REST API routes for uploads, chat streams, document deletion, and report exports |
 | **RAG Orchestration** | [LangChain](https://www.langchain.com/) | Document loading (`PyPDFLoader`), chunking (`RecursiveCharacterTextSplitter`), and prompt chaining |
 | **Vector Database** | [FAISS](https://github.com/facebookresearch/faiss) | High-performance in-memory similarity search and embedding storage |
 | **Local LLM & Embeddings** | [Ollama](https://ollama.ai/) | `llama3.2` (Chat LLM) & `nomic-embed-text` (Document Vector Embeddings) |
-| **Frontend Viewer** | [PDF.js](https://mozilla.github.io/pdf.js/) | Hardware-accelerated HTML5 canvas rendering for PDF documents |
-| **Styling & Logic** | HTML5, Vanilla CSS3, JavaScript (ES6+) | Resizable split layout, draggable handle, collapsible sidebar, and responsive styling |
+| **Frontend Viewer** | [PDF.js](https://mozilla.github.io/pdf.js/) | Hardware-accelerated HTML5 canvas rendering & text content matrix extraction |
+| **Styling & Logic** | HTML5, Vanilla CSS3, JavaScript (ES6+) | Resizable split layout, draggable handle, night mode filter, modal dialog, and report generator |
 
 ---
 
@@ -57,8 +61,9 @@ graph TD
     Chat --> Retriever[FAISS Retriever Scoped by Doc ID]
     Retriever --> Prompt[LangChain Context Prompt]
     Prompt --> LLM[Ollama llama3.2 LLM]
-    LLM --> Answer[AI Answer + Citation Page Metadata]
+    LLM --> Answer[AI Answer + Citation Page & Snippet Metadata]
     Answer --> UI[PDF-Sight GUI / PDF.js Canvas]
+    UI -->|Click Citation| Highlight[PDF.js Canvas Text Highlighter]
 ```
 
 ---
@@ -141,19 +146,19 @@ http://127.0.0.1:5000
 
 ```text
 pdf-sight/
-├── app.py                  # Flask server application & API routes
-├── rag_engine.py           # LangChain RAG pipeline & FAISS integration
+├── app.py                  # Flask server application & REST API endpoints
+├── rag_engine.py           # LangChain RAG pipeline & FAISS vector store integration
 ├── requirements.txt        # Python package dependencies
 ├── .env                    # Environment configuration file
 ├── uploads/                # Uploaded PDF document storage
 ├── static/
 │   ├── css/
-│   │   └── style.css       # Design tokens, resizer bar, & PDF viewer layout
+│   │   └── style.css       # Layout tokens, resizer bar, night mode & modal styles
 │   └── js/
-│       ├── chat.js         # Chat UI, upload handler, resizer & sidebar logic
-│       └── pdf_viewer.js   # PDF.js render pipeline, zoom controls & panning
+│       ├── chat.js         # Chat UI, upload handler, resizer, report export & modal logic
+│       └── pdf_viewer.js   # PDF.js render pipeline, canvas highlighter, zoom & panning
 └── templates/
-    └── index.html          # Main split-panel application view
+    └── index.html          # Main split-panel application view & modal markup
 ```
 
 ---

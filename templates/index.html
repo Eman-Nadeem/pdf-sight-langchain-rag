@@ -29,6 +29,12 @@
                     <button id="uploadBtn" class="btn btn-primary" title="Upload PDF">
                         <i class="fa-solid fa-cloud-arrow-up"></i> <span class="btn-text">Upload PDF</span>
                     </button>
+                    <button id="exportReportBtn" class="btn-icon" title="Export Chat Report">
+                        <i class="fa-solid fa-file-export"></i>
+                    </button>
+                    <button id="openDocManagerBtn" class="btn-icon" title="Document Manager">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </button>
                     <button id="toggleChatBtn" class="btn-icon" title="Collapse Sidebar">
                         <i class="fa-solid fa-chevron-left"></i>
                     </button>
@@ -82,13 +88,15 @@
                 </div>
                 <div class="pdf-controls">
                     <button id="prevPage" class="btn-icon" title="Previous Page"><i class="fa-solid fa-chevron-left"></i></button>
-                    <span class="page-count">Page <span id="pageNum">0</span> of <span id="pageCount">0</span></span>
+                    <span class="page-count">Page <input type="number" id="pageNumInput" class="page-input" value="1" min="1"> of <span id="pageCount">0</span></span>
                     <button id="nextPage" class="btn-icon" title="Next Page"><i class="fa-solid fa-chevron-right"></i></button>
                     <div class="divider"></div>
                     <button id="zoomOut" class="btn-icon" title="Zoom Out"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
                     <span id="zoomScale" class="zoom-scale" title="Zoom Level">120%</span>
                     <button id="zoomIn" class="btn-icon" title="Zoom In"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
                     <button id="zoomReset" class="btn-icon" title="Reset Zoom"><i class="fa-solid fa-rotate-left"></i></button>
+                    <div class="divider"></div>
+                    <button id="toggleNightModeBtn" class="btn-icon" title="Toggle Night Mode"><i class="fa-solid fa-moon"></i></button>
                 </div>
             </header>
 
@@ -102,6 +110,21 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- DOCUMENT MANAGER MODAL -->
+    <div id="docManagerModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <header class="modal-header">
+                <h3><i class="fa-solid fa-folder-open"></i> Indexed Document Manager</h3>
+                <button id="closeDocManagerBtn" class="btn-icon" title="Close"><i class="fa-solid fa-xmark"></i></button>
+            </header>
+            <div class="modal-body">
+                <div id="docListContainer" class="doc-list-container">
+                    <p class="empty-state">No documents indexed yet.</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Scripts -->

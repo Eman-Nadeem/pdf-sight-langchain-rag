@@ -224,7 +224,36 @@ Always reference the source document and page number in your response when citin
             "answer": response_text,
             "sources": sources
         }
-        
+
+    def delete_document(self, doc_id: str):
+        """Deletes all chunks belonging to doc_id from FAISS vector store."""
+        if self.vector_store is None:
+            return False
+
+        try:
+            docstore = self.vector_store.docstore
+            index_to_docstore_id = self.vector_store.index_to_docstore_id
+
+            remaining_docs = []
+            for doc_uuid in index_to_docstore_id.values():
+                doc = docstore.search(doc_uuid)
+                if not doc or isinstance(doc, str):
+                    continue
+                if doc.metadata.get("doc_id") != doc_id:
+                    remaining_docs.append(doc)
+
+            if remaining_docs:
+                self.vector_store = FAISS.from_documents(
+                    documents=remaining_docs,
+                    embedding=self.embeddings
+                )
+            else:
+                self.vector_store = None
+            return True
+        except Exception as e:
+            print(f"Error deleting document {doc_id}:", e)
+            return False
+    
     
 if __name__ == "__main__":
     import sys

@@ -132,6 +132,8 @@ function appendUserMessage(text) {
     scrollToBottom();
 }
 
+const citationsStore = {};
+
 function appendAIMessage(answerText, sources = []) {
     const msgDiv = document.createElement('div');
     msgDiv.className = 'message ai-message';
@@ -140,9 +142,16 @@ function appendAIMessage(answerText, sources = []) {
     if (sources && sources.length > 0) {
         citationsHTML = '<div class="citations-container">';
         sources.forEach(src => {
+            const citeId = 'cite_' + Math.random().toString(36).substring(2, 10);
+            citationsStore[citeId] = {
+                doc_id: src.doc_id,
+                page: src.page,
+                snippet: src.snippet || ''
+            };
+
             const docName = documentsMap[src.doc_id] ? documentsMap[src.doc_id].filename : `Doc ${src.doc_id}`;
             citationsHTML += `
-                <button class="citation-badge" onclick="onCitationClick('${src.doc_id}', ${src.page})">
+                <button class="citation-badge" data-cite-id="${citeId}">
                     <i class="fa-solid fa-bookmark"></i> ${escapeHTML(docName)} (Page ${src.page})
                 </button>
             `;
@@ -160,6 +169,24 @@ function appendAIMessage(answerText, sources = []) {
     chatMessages.appendChild(msgDiv);
     scrollToBottom();
 }
+
+// Event Delegation for Citation Badge Clicks
+chatMessages.addEventListener('click', (e) => {
+    const badge = e.target.closest('.citation-badge');
+    if (!badge) return;
+
+    const citeId = badge.dataset.citeId;
+    if (citeId && citationsStore[citeId]) {
+        const cite = citationsStore[citeId];
+        if (documentsMap[cite.doc_id]) {
+            if (activeDocId !== cite.doc_id) {
+                switchActivePDF(cite.doc_id, cite.page, cite.snippet);
+            } else {
+                jumpToPage(cite.page, cite.snippet);
+            }
+        }
+    }
+});
 
 function appendSystemMessage(htmlText) {
     const msgDiv = document.createElement('div');
@@ -191,16 +218,33 @@ function removeMessage(id) {
     if (elem) elem.remove();
 }
 
-// Global handler for citation badge clicks
-window.onCitationClick = function(docId, page) {
-    if (documentsMap[docId]) {
-        if (activeDocId !== docId) {
-            switchActivePDF(docId, page);
-        } else {
-            jumpToPage(page);
+async function loadExistingDocuments() {
+    try {
+        const res = await fetch('/api/documents');
+        if (!res.ok) return;
+        const docs = await res.json();
+
+        docs.forEach(doc => {
+            documentsMap[doc.doc_id] = doc;
+            if (!docSelect.querySelector(`option[value="${doc.doc_id}"]`)) {
+                const option = document.createElement('option');
+                option.value = doc.doc_id;
+                option.textContent = `📄 ${doc.filename}`;
+                docSelect.appendChild(option);
+            }
+        });
+
+        if (docs.length > 0 && !activeDocId) {
+            const firstDoc = docs[0];
+            docSelect.value = firstDoc.doc_id;
+            switchActivePDF(firstDoc.doc_id, 1);
         }
+    } catch (err) {
+        console.error('Error loading initial documents:', err);
     }
-};
+}
+
+document.addEventListener('DOMContentLoaded', loadExistingDocuments);
 
 function scrollToBottom() {
     chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -302,3 +346,147 @@ if (resizer && chatPanel) {
     window.addEventListener('resize', updatePdfPanelNarrowState);
     updatePdfPanelNarrowState();
 }
+
+// ==========================================
+// 6. EXPORT CHAT & ANALYSIS REPORT (.md)
+// ==========================================
+const exportReportBtn = document.getElementById('exportReportBtn');
+if (exportReportBtn) {
+    exportReportBtn.addEventListener('click', () => {
+        const messages = chatMessages.querySelectorAll('.message');
+        if (messages.length === 0) {
+            alert('No conversation history to export.');
+            return;
+        }
+
+        let reportText = `# 🧠 PDF-Sight Analysis & Chat Report\n`;
+        reportText += `**Generated**: ${new Date().toLocaleString()}\n`;
+        reportText += `**Target Context**: ${docSelect.options[docSelect.selectedIndex].text}\n\n`;
+        reportText += `---\n\n## 💬 Conversation History\n\n`;
+
+        messages.forEach((msg, idx) => {
+            const isUser = msg.classList.contains('user-message');
+            const isAI = msg.classList.contains('ai-message');
+            const isSystem = msg.classList.contains('system-message');
+            const contentDiv = msg.querySelector('.content');
+
+            if (!contentDiv) return;
+
+            if (isUser) {
+                reportText += `### 👤 User:\n${contentDiv.innerText.trim()}\n\n`;
+            } else if (isAI) {
+                const textOnly = contentDiv.children[0] ? contentDiv.children[0].innerText.trim() : contentDiv.innerText.trim();
+                reportText += `### 🤖 Assistant:\n${textOnly}\n\n`;
+
+                const citations = msg.querySelectorAll('.citation-badge');
+                if (citations.length > 0) {
+                    reportText += `**Citations**:\n`;
+                    citations.forEach(c => {
+                        reportText += `- ${c.innerText.trim()}\n`;
+                    });
+                    reportText += `\n`;
+                }
+            } else if (isSystem) {
+                reportText += `> ℹ️ *System*: ${contentDiv.innerText.trim()}\n\n`;
+            }
+        });
+
+        reportText += `---\n*Report exported from PDF-Sight Local Multi-PDF RAG Assistant*\n`;
+
+        const blob = new Blob([reportText], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `PDF-Sight_Report_${Date.now()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+}
+
+// ==========================================
+// 7. DOCUMENT MANAGER MODAL & DELETION
+// ==========================================
+const docManagerModal = document.getElementById('docManagerModal');
+const openDocManagerBtn = document.getElementById('openDocManagerBtn');
+const closeDocManagerBtn = document.getElementById('closeDocManagerBtn');
+const docListContainer = document.getElementById('docListContainer');
+
+function renderDocManagerList() {
+    if (!docListContainer) return;
+    const docs = Object.values(documentsMap);
+
+    if (docs.length === 0) {
+        docListContainer.innerHTML = '<p class="empty-state">No documents indexed yet. Upload a PDF to get started.</p>';
+        return;
+    }
+
+    let html = '';
+    docs.forEach(doc => {
+        html += `
+            <div class="doc-item">
+                <div class="doc-item-info">
+                    <div class="doc-item-title"><i class="fa-regular fa-file-pdf"></i> ${escapeHTML(doc.filename)}</div>
+                    <div class="doc-item-meta">ID: ${doc.doc_id} • ${doc.chunks} vector chunks</div>
+                </div>
+                <button class="btn btn-danger" onclick="deleteDocumentFromManager('${doc.doc_id}')">
+                    <i class="fa-solid fa-trash-can"></i> Delete
+                </button>
+            </div>
+        `;
+    });
+    docListContainer.innerHTML = html;
+}
+
+if (openDocManagerBtn) {
+    openDocManagerBtn.addEventListener('click', () => {
+        renderDocManagerList();
+        if (docManagerModal) docManagerModal.classList.remove('hidden');
+    });
+}
+
+if (closeDocManagerBtn) {
+    closeDocManagerBtn.addEventListener('click', () => {
+        if (docManagerModal) docManagerModal.classList.add('hidden');
+    });
+}
+
+if (docManagerModal) {
+    docManagerModal.addEventListener('click', (e) => {
+        if (e.target === docManagerModal) {
+            docManagerModal.classList.add('hidden');
+        }
+    });
+}
+
+// Global handler for document deletion from modal
+window.deleteDocumentFromManager = async function(docId) {
+    const doc = documentsMap[docId];
+    if (!doc) return;
+
+    if (!confirm(`Are you sure you want to delete '${doc.filename}' from vector store?`)) return;
+
+    try {
+        const res = await fetch(`/api/documents/${docId}`, { method: 'DELETE' });
+        const data = await res.json();
+
+        if (res.ok) {
+            delete documentsMap[docId];
+
+            // Remove option from docSelect dropdown
+            const opt = docSelect.querySelector(`option[value="${docId}"]`);
+            if (opt) opt.remove();
+
+            if (docSelect.value === docId) docSelect.value = 'all';
+
+            renderDocManagerList();
+            appendSystemMessage(`Document <strong>${doc.filename}</strong> has been deleted.`);
+        } else {
+            alert('Delete failed: ' + (data.error || 'Unknown error'));
+        }
+    } catch (err) {
+        console.error('Delete error:', err);
+        alert('An error occurred while deleting the document.');
+    }
+};

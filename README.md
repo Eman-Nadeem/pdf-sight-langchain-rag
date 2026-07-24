@@ -81,8 +81,8 @@ ollama pull nomic-embed-text
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/Eman-Nadeem/pdf-sight.git
-   cd pdf-sight
+   git clone https://github.com/Eman-Nadeem/pdf-sight-langchain-rag.git
+   cd pdf-sight-langchain-rag
    ```
 
 2. **Create and activate a Python virtual environment**:
